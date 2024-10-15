@@ -1,74 +1,71 @@
-from typing import Union
-from fastapi import FastAPI, HTTPException
-import requests
-import json
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat con IA</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        #respuesta {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            min-height: 50px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Pregúntale a la IA</h2>
+        <input type="text" id="pregunta" placeholder="Escribe tu pregunta">
+        <button onclick="enviarPregunta()">Enviar</button>
+        <div id="respuesta">Esperando respuesta...</div>
+    </div>
 
-app = FastAPI()
-
-API_KEY = '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'  # Asegúrate de usar la clave API correcta
-GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-REST_API_URL = "https://api-rest-ia-1.onrender.com"  # URL de la API REST externa
-
-def IA_groq(pregunta: str) -> str:
-    """Función para obtener la respuesta de la IA a partir de una pregunta."""
-    headers = {
-        "content-type": "application/json",
-        "Authorization": f"Bearer {API_KEY}"
-    }
-
-    data = {
-        "messages": [
-            {
-                "role": "system",
-                "content": "Contéstame como un profesional en programación, solo español."
-            },
-            {
-                "role": "user",
-                "content": pregunta
-            }
-        ],
-        "model": "mixtral-8x7b-32768",  # Cambia el modelo si es necesario
-        "temperature": 1,                # Ajusta la temperatura para la aleatoriedad de las respuestas
-        "max_tokens": 1024,              # Máximo de tokens en la respuesta
-        "top_p": 1,                      # Para el muestreo de núcleo
-        "stream": False,
-        "stop": None
-    }
-
-    response = requests.post(GROQ_URL, json=data, headers=headers)
-
-    if response.status_code == 200:
-        respuesta = response.json()
-        return respuesta['choices'][0]['message']['content']
-    else:
-        raise HTTPException(status_code=response.status_code, detail="Error en la API de Groq")
-
-def llamar_api_rest(pregunta: str) -> str:
-    """Función para llamar a la API REST externa."""
-    try:
-        response = requests.post(f"{REST_API_URL}/ia", json={"pregunta": pregunta})
-        response.raise_for_status()  # Lanza un error si la respuesta no es 200
-        data = response.json()
-        return data['respuesta']  # Asegúrate de que la clave 'respuesta' exista en la respuesta JSON
-    except requests.RequestException as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
-
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: Union[str, None] = None):
-    return {"item_id": item_id, "q": q}
-
-@app.get("/ia/{pregunta_id}")
-def responder_ia(pregunta_id: str):
-    """Endpoint para responder a preguntas usando la IA de Groq o la API REST."""
-    # Intenta primero con la IA Groq
-    try:
-        respuesta = IA_groq(pregunta_id)
-    except HTTPException:
-        # Si Groq falla, intenta con la API REST
-        respuesta = llamar_api_rest(pregunta_id)
-
-    return {"Pregunta": pregunta_id, "Respuesta": respuesta}
+    <script>
+        function enviarPregunta() {
+            const pregunta = document.getElementById("pregunta").value;
+            fetch(`/ia/${encodeURIComponent(pregunta)}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("respuesta").innerText = data.Respuesta;
+                })
+                .catch(error => {
+                    document.getElementById("respuesta").innerText = "Error al obtener la respuesta.";
+                    console.error('Error:', error);
+                });
+        }
+    </script>
+</body>
+</html>
